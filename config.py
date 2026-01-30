@@ -15,7 +15,7 @@ PATHS = {
     "LOG_FILE": os.path.join(BASE_DIR, "logs", "generator.log")
 }
 
-# Certificate Settings (A4 @ 300 DPI)
+# Certificate Settings
 CERT_SIZE = (3508, 2480) 
 WORKSHOP_TOPIC = "Advanced Python & AI Workshop"
 ISSUE_DATE = "December 2024"
@@ -29,8 +29,7 @@ COLORS = {
     "WHITE": (255, 255, 255)
 }
 
-# Layout Positions (x, y) 
-# Added the missing POS_ID_CARD here
+# Layout Positions (x, y)
 POSITIONS = {
     "NAME": (1800, 900),
     "TOPIC": (1800, 1150),
@@ -38,4 +37,6 @@ POSITIONS = {
     "QR": (500, 1250),
     "ROLL_NO": (550, 1150)
 }
+
+# Added missing POS_ID_CARD coordinate for the lanyard effect
 POS_ID_CARD = (200, 450)
