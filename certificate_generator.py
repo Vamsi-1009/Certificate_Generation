@@ -5,6 +5,7 @@ from reportlab.pdfgen import canvas
 import config
 from utils.qr_utils import generate_student_qr
 from utils.image_utils import prepare_student_photo, add_lanyard_effect
+from utils.web_utils import generate_verification_html
 
 class KIETGenerator:
     def __init__(self):
@@ -55,6 +56,7 @@ class KIETGenerator:
         print(f"Processing {len(df)} certificates...")
         for _, row in df.iterrows():
             self.generate_single(row)
+            generate_verification_html(row)
             print(f"Done: {row['roll_no']}")
 
 if __name__ == "__main__":
