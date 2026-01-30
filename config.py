@@ -19,8 +19,9 @@ PATHS = {
 CERT_SIZE = (3508, 2480) 
 WORKSHOP_TOPIC = "Advanced Python & AI Workshop"
 ISSUE_DATE = "December 2024"
+AUTHORITY = "KIET Administration"
 
-# Visuals (KIET Branding)
+# Visuals
 COLORS = {
     "KIET_BLUE": (0, 86, 179),
     "GOLD": (218, 165, 32),
@@ -28,7 +29,8 @@ COLORS = {
     "WHITE": (255, 255, 255)
 }
 
-# Layout Positions (x, y) - Calibrated for A4
+# Layout Positions (x, y) 
+# Added the missing POS_ID_CARD here
 POSITIONS = {
     "NAME": (1800, 900),
     "TOPIC": (1800, 1150),
@@ -36,3 +38,4 @@ POSITIONS = {
     "QR": (500, 1250),
     "ROLL_NO": (550, 1150)
 }
+POS_ID_CARD = (200, 450)
