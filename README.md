@@ -1,17 +1,17 @@
-# KIET Certificate Generator
+# KIET Certificate & ID Card Generator
 
-Automated industrial-grade system for generating workshop certificates with integrated ID card visuals and QR verification.
+An automated system for generating professional workshop certificates featuring an integrated ID card sidebar and QR verification.
 
-## 🚀 Setup Instructions
-1. **Activate Environment**: `source venv/Scripts/activate`
-2. **Install Dependencies**: `pip install -r requirements.txt`
-3. **Verify Setup**: `python verify_setup.py`
+## 🛠️ Tech Stack
+* **Backend**: Python (Pillow, Pandas, ReportLab)
+* **Verification**: QR Codes + Local HTML Server
+* **Frontend**: Bootstrap 5 Dashboard
 
-## 🛠️ Usage
-1. Place student photos in `student_data/photos/` (Filename must match CSV entry).
-2. Run Template Generator: `python templates/create_main_template.py`
-3. Run Generator: `python certificate_generator.py`
+## 🚀 Quick Start
+1. Place student photos in `student_data/photos/`
+2. Update student data in `student_data/students.csv`
+3. Run: `./run_project.sh`
+4. View Results: Open `dashboard.html` in any browser.
 
-## 📁 Output
-- **JPG/PDF**: Found in `generated_certificates/images/` and `pdf/`.
-- **Verification**: HTML pages in `generated_certificates/web_pages/`.
+## 🔍 Verification
+To test QR codes, run `python -m http.server 8000` and scan the QR on the certificate using a phone on the same Wi-Fi.
