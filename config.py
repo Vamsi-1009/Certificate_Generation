@@ -1,6 +1,7 @@
 import os
 
 # Base Directory
+BASE_URL = "http://10.10.4.94:8000/generated_certificates/web_pages/"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Path Configuration
