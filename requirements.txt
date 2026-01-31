@@ -1,0 +1,11 @@
+charset-normalizer==3.4.4
+colorama==0.4.6
+numpy==2.4.1
+pandas==3.0.0
+pillow==12.1.0
+python-dateutil==2.9.0.post0
+python-dotenv==1.2.1
+qrcode==8.2
+reportlab==4.4.9
+six==1.17.0
+tzdata==2025.3
