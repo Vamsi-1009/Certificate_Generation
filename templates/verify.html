@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verified Certificate</title>
+    <style>
+        body { font-family: sans-serif; background: #f1f5f9; display: flex; justify-content: center; padding: 20px; }
+        .box { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
+        .status { color: #059669; font-weight: bold; margin-bottom: 15px; font-size: 18px; }
+        .details { text-align: left; background: #f8fafc; padding: 15px; border-radius: 10px; margin-top: 15px; }
+        .details p { margin: 8px 0; color: #334155; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="status">✅ VERIFIED RECORD</div>
+        <p style="font-size: 14px; color: #64748b;">This document is an authentic record of the AI Karyashala Bootcamp.</p>
+        <div class="details">
+            <p><strong>Recipient:</strong> {{ name }}</p>
+            <p><strong>Roll Number:</strong> {{ roll }}</p>
+            <p><strong>Issue Date:</strong> {{ date }}</p>
+        </div>
+        <p style="font-size: 11px; color: #94a3b8; margin-top: 20px;">🔒 Securely stored in AI Karyashala Database</p>
+    </div>
+</body>
+</html>
