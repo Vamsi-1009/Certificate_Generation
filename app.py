@@ -9,23 +9,41 @@ from io import BytesIO
 
 app = Flask(__name__)
 
+# Upgraded Professional SVG Template
 SVG_TEMPLATE = """
 <svg width="1200" height="850" viewBox="0 0 1200 850" xmlns="http://www.w3.org/2000/svg">
-    <rect width="1200" height="850" fill="#f8fbff"/>
-    <rect x="30" y="30" width="1140" height="790" rx="18" fill="none" stroke="#4a6cf7" stroke-width="8"/>
-    <rect x="90" y="200" width="230" height="380" rx="16" fill="#2742c4"/>
-    <rect x="150" y="305" width="110" height="135" fill="#ffffff" rx="8"/> 
-    <image x="150" y="305" width="110" height="135" href="{photo_base64}"/>
-    <text x="205" y="465" text-anchor="middle" font-size="14" fill="#ffffff" font-family="Arial">{name}</text>
-    <image x="255" y="515" width="45" height="45" href="{qr_base64}"/>
-    <text x="130" y="550" font-size="10" fill="#ffffff" font-family="Arial">Name / Roll No.</text>
-    <text x="720" y="140" text-anchor="middle" font-size="44" fill="#2c3e7b" font-family="Georgia">CERTIFICATE OF PARTICIPATION</text>
-    <text x="720" y="330" text-anchor="middle" font-size="32" fill="#3b4cca" font-weight="bold" font-family="Georgia">{name}</text>
-    <text x="720" y="400" text-anchor="middle" font-size="18" fill="#333" font-family="Arial">has participated in the AI Karyashala Bootcamp</text>
-    <text x="720" y="430" text-anchor="middle" font-size="18" fill="#333" font-family="Arial">conducted at KIET College, Kakinada</text>
-    <text x="720" y="560" text-anchor="middle" font-size="14" fill="#555" font-family="Arial">Cert ID: {cert_id} | Roll: {roll_no}</text>
-    <text x="380" y="650" font-size="18" fill="#333" font-family="Arial">Date: {date}</text>
-    <text x="780" y="650" font-size="18" fill="#333" font-family="Arial">Coordinator / Trainer: _________</text>
+    <rect width="1200" height="850" fill="#ffffff"/>
+    <rect x="20" y="20" width="1160" height="810" fill="none" stroke="#2c3e7b" stroke-width="12"/>
+    <rect x="40" y="40" width="1120" height="770" fill="none" stroke="#d4af37" stroke-width="4"/>
+    
+    <rect x="0" y="0" width="300" height="850" fill="#2c3e7b"/>
+    <circle cx="150" cy="150" r="80" fill="#ffffff" opacity="0.1"/>
+    
+    <rect x="75" y="250" width="150" height="180" rx="10" fill="#ffffff"/>
+    <image x="80" y="255" width="140" height="170" href="{photo_base64}" preserveAspectRatio="xMidYMid slice"/>
+    
+    <text x="150" y="470" text-anchor="middle" font-size="18" fill="#ffffff" font-family="Arial" font-weight="bold">{name}</text>
+    <text x="150" y="495" text-anchor="middle" font-size="14" fill="#cbd5e1" font-family="Arial">{roll_no}</text>
+
+    <text x="750" y="150" text-anchor="middle" font-size="50" fill="#2c3e7b" font-family="Georgia" font-weight="bold">CERTIFICATE</text>
+    <text x="750" y="210" text-anchor="middle" font-size="20" fill="#d4af37" font-family="Arial" letter-spacing="5">OF PARTICIPATION</text>
+    
+    <text x="750" y="320" text-anchor="middle" font-size="24" fill="#64748b" font-family="Arial">This is to certify that</text>
+    <text x="750" y="380" text-anchor="middle" font-size="42" fill="#2c3e7b" font-family="Georgia" font-weight="bold">{name}</text>
+    
+    <text x="750" y="460" text-anchor="middle" font-size="20" fill="#334155" font-family="Arial">has successfully completed the</text>
+    <text x="750" y="500" text-anchor="middle" font-size="26" fill="#2c3e7b" font-family="Arial" font-weight="bold">AI Karyashala Bootcamp</text>
+    <text x="750" y="540" text-anchor="middle" font-size="18" fill="#64748b" font-family="Arial">Organized by KIET College, Kakinada</text>
+
+    <line x1="450" y1="680" x2="650" y2="680" stroke="#334155" stroke-width="1"/>
+    <text x="550" y="710" text-anchor="middle" font-size="16" fill="#334155" font-family="Arial">Date: {date}</text>
+    
+    <line x1="850" y1="680" x2="1050" y2="680" stroke="#334155" stroke-width="1"/>
+    <text x="950" y="710" text-anchor="middle" font-size="16" fill="#334155" font-family="Arial">Authorized Signatory</text>
+
+    <rect x="110" y="650" width="80" height="80" fill="white" rx="5"/>
+    <image x="115" y="655" width="70" height="70" href="{qr_base64}"/>
+    <text x="150" y="750" text-anchor="middle" font-size="10" fill="#cbd5e1" font-family="Arial">ID: {cert_id}</text>
 </svg>
 """
 
@@ -68,6 +86,7 @@ def bulk_generate():
         cert_id = f"AK-{uuid.uuid4().hex[:8].upper()}"
         name, roll, date = str(row['name']).upper(), str(row['roll_no']), str(row['date'])
         qr_b64 = get_qr_base64(cert_id, name)
+        # Note: Photo is empty in bulk mode for speed
         svg_data = SVG_TEMPLATE.format(name=name, roll_no=roll, date=date, photo_base64="", qr_base64=qr_b64, cert_id=cert_id)
         png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'))
         certificates.append({
