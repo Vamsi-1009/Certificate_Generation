@@ -11,28 +11,22 @@ from io import BytesIO
 
 app = Flask(__name__)
 
-DB_URI = os.environ.get('postgresql://postgres:KIET%40schoolof%20the%20year@db.vpzcsgbwyjpvitwudohk.supabase.co:5432/postgres')
-
-# Ensure storage folders exist
-BATCH_DEST = 'static/batches'
+# Render uses /tmp for temporary file processing during runtime
+BATCH_DEST = '/tmp/batches'
 os.makedirs(BATCH_DEST, exist_ok=True)
 
-# PostgreSQL Configuration
-DB_PARAMS = {
-    "dbname": "certificate_db",
-    "user": "postgres",
-    "password": "yourpassword", 
-    "host": "localhost"
-}
+# This grabs the connection string from your Render Environment Variables
+DB_URI = os.environ.get('postgresql://postgres:KIET12schooloftheyear@db.vpzcsgbwyjpvitwudohk.supabase.co:5432/postgres')
 
-# The Landscape SVG Template with ID card on the left
+# The Landscape SVG Template
 SVG_TEMPLATE = """
 <svg width="1200" height="850" viewBox="0 0 1200 850" xmlns="http://www.w3.org/2000/svg">
     <rect width="1200" height="850" fill="#f8fbff"/>
     <rect x="30" y="30" width="1140" height="790" rx="18" fill="none" stroke="#4a6cf7" stroke-width="8"/>
     
     <rect x="90" y="200" width="230" height="380" rx="16" fill="#2742c4"/>
-    <rect x="150" y="305" width="110" height="135" fill="#ffffff" rx="8"/> <image x="150" y="305" width="110" height="135" href="{photo_base64}"/>
+    <rect x="150" y="305" width="110" height="135" fill="#ffffff" rx="8"/> 
+    <image x="150" y="305" width="110" height="135" href="{photo_base64}"/>
     <text x="205" y="465" text-anchor="middle" font-size="14" fill="#ffffff" font-family="Arial">{name}</text>
     <image x="255" y="515" width="45" height="45" href="{qr_base64}"/>
     <text x="130" y="550" font-size="10" fill="#ffffff" font-family="Arial">Name / Roll No.</text>
@@ -49,8 +43,9 @@ SVG_TEMPLATE = """
 """
 
 def get_qr_base64(cert_id):
-    # Update 'yourdomain.com' to your actual hosting URL for live verification
-    url = f"https://yourdomain.com/verify/{cert_id}"
+    # Dynamically detects your Render URL for the QR code
+    domain = request.host_url.rstrip('/')
+    url = f"{domain}/verify/{cert_id}"
     qr = qrcode.make(url)
     buf = BytesIO()
     qr.save(buf, format="PNG")
@@ -62,7 +57,6 @@ def index():
 
 @app.route('/generate', methods=['POST'])
 def generate():
-    # Single generation logic
     name = request.form.get('name').upper()
     roll = request.form.get('roll_no')
     date = request.form.get('date')
@@ -86,14 +80,14 @@ def bulk_generate():
     folder_path = os.path.join(BATCH_DEST, batch_id)
     os.makedirs(folder_path, exist_ok=True)
     
-    conn = psycopg2.connect(**DB_PARAMS)
+    # FIX: Connect using the DB_URI from Render Environment Variables
+    conn = psycopg2.connect(DB_URI)
     cur = conn.cursor()
 
     for _, row in df.iterrows():
         cert_id = f"AK-{uuid.uuid4().hex[:8].upper()}"
         name, roll, date = str(row['name']).upper(), str(row['roll_no']), str(row['date'])
 
-        # Store in PSQL for later verification
         cur.execute("INSERT INTO certificates (cert_id, name, roll_no, issue_date) VALUES (%s, %s, %s, %s)",
                     (cert_id, name, roll, date))
 
@@ -115,7 +109,8 @@ def bulk_generate():
 
 @app.route('/verify/<cert_id>')
 def verify(cert_id):
-    conn = psycopg2.connect(**DB_PARAMS)
+    # FIX: Connect using the DB_URI
+    conn = psycopg2.connect(DB_URI)
     cur = conn.cursor()
     cur.execute("SELECT name, roll_no, issue_date FROM certificates WHERE cert_id=%s", (cert_id,))
     res = cur.fetchone()
@@ -125,4 +120,5 @@ def verify(cert_id):
     return "Verification Link Expired or Invalid", 404
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
