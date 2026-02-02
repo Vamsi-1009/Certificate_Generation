@@ -16,7 +16,7 @@ BATCH_DEST = '/tmp/batches'
 os.makedirs(BATCH_DEST, exist_ok=True)
 
 # This grabs the connection string from your Render Environment Variables
-# It looks for the KEY 'DATABASE_URL' that you set in the Render Dashboard
+# Use 'DATABASE_URL' as the key name
 DB_URI = os.environ.get('postgresql://postgres:KIET12schooloftheyear@db.vpzcsgbwyjpvitwudohk.supabase.co:5432/postgres')
 
 # The Landscape SVG Template
@@ -80,8 +80,8 @@ def bulk_generate():
     folder_path = os.path.join(BATCH_DEST, batch_id)
     os.makedirs(folder_path, exist_ok=True)
     
-    # Connect using the DB_URI variable defined at the top
-    conn = psycopg2.connect(postgresql://postgres:KIET12schooloftheyear@db.vpzcsgbwyjpvitwudohk.supabase.co:5432/postgres)
+    # Use the variable DB_URI we defined at the top
+    conn = psycopg2.connect(os.environ.get('postgresql://postgres:KIET12schooloftheyear@db.vpzcsgbwyjpvitwudohk.supabase.co:5432/postgres'))
     cur = conn.cursor()
 
     for _, row in df.iterrows():
