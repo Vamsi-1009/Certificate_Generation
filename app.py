@@ -11,6 +11,8 @@ from io import BytesIO
 
 app = Flask(__name__)
 
+DB_URI = os.environ.get('postgresql://postgres:KIET%40schoolof%20the%20year@db.vpzcsgbwyjpvitwudohk.supabase.co:5432/postgres')
+
 # Ensure storage folders exist
 BATCH_DEST = 'static/batches'
 os.makedirs(BATCH_DEST, exist_ok=True)
