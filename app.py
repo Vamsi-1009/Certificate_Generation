@@ -39,15 +39,27 @@ SVG_TEMPLATE = """
 """
 
 def get_qr_base64(name, roll, date, cert_id):
-    # Encode all data including the unique ID into the QR URL
-    raw_data = f"{name}|{roll}|{date}|{cert_id}"
+    # Optimized data string: shorter separators save space in the QR
+    raw_data = f"{name};{roll};{date};{cert_id}"
     encoded_data = base64.urlsafe_b64encode(raw_data.encode()).decode()
+    
+    # Ensure domain is clean for mobile browsers
     domain = request.host_url.rstrip('/')
     url = f"{domain}/v#{encoded_data}"
     
-    qr = qrcode.make(url)
+    # QR Configuration for Maximum Scannability
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L, # Low error correction = larger blocks
+        box_size=10, # Increases size of each dot
+        border=2,
+    )
+    qr.add_data(url)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
     buf = BytesIO()
-    qr.save(buf, format="PNG")
+    img.save(buf, format="PNG")
     return f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}"
 
 @app.route('/')
@@ -87,7 +99,6 @@ def bulk_generate():
         name, roll, date = str(row['name']).upper(), str(row['roll_no']), str(row['date'])
         
         qr_b64 = get_qr_base64(name, roll, date, cert_id)
-        # Note: Empty photo for bulk speed
         svg_data = SVG_TEMPLATE.format(name=name, roll_no=roll, date=date, photo_base64="", qr_base64=qr_b64, cert_id=cert_id)
         png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'))
         

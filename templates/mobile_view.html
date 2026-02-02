@@ -59,8 +59,12 @@
 
         if (hash) {
             try {
+                // Decode the data string (Name;Roll;Date;ID)
                 const decoded = atob(hash.replace(/-/g, '+').replace(/_/g, '/'));
-                const [name, roll, date, id] = decoded.split('|');
+                
+                // CRITICAL UPDATE: Changed separator to ';' to match updated app.py
+                const [name, roll, date, id] = decoded.split(';'); 
+                
                 currentStudent = name;
                 
                 document.getElementById('dispName').innerText = name;
@@ -70,9 +74,13 @@
                 
                 document.getElementById('certContainer').style.display = 'block';
                 document.getElementById('downloadBtn').style.display = 'block';
+                document.getElementById('error').style.display = 'none';
             } catch (e) {
+                document.getElementById('error').innerText = "Decoding Error: " + e.message;
                 document.getElementById('error').style.display = 'block';
             }
+        } else {
+            document.getElementById('error').style.display = 'block';
         }
 
         async function downloadMobilePDF() {
