@@ -9,7 +9,7 @@ from io import BytesIO
 
 app = Flask(__name__)
 
-# Upgraded Professional SVG Template
+# Your Professional SVG Template
 SVG_TEMPLATE = """
 <svg width="1200" height="850" viewBox="0 0 1200 850" xmlns="http://www.w3.org/2000/svg">
     <rect width="1200" height="850" fill="#ffffff"/>
