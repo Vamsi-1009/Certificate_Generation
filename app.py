@@ -9,7 +9,7 @@ from io import BytesIO
 
 app = Flask(__name__)
 
-# Your Professional SVG Template
+# Upgraded Professional SVG Template
 SVG_TEMPLATE = """
 <svg width="1200" height="850" viewBox="0 0 1200 850" xmlns="http://www.w3.org/2000/svg">
     <rect width="1200" height="850" fill="#ffffff"/>
@@ -38,9 +38,14 @@ SVG_TEMPLATE = """
 </svg>
 """
 
-def get_qr_base64(cert_id, name):
-    info = f"Verified: {name}\nID: {cert_id}"
-    qr = qrcode.make(info)
+def get_qr_base64(name, roll, date, cert_id):
+    # Encode all data including the unique ID into the QR URL
+    raw_data = f"{name}|{roll}|{date}|{cert_id}"
+    encoded_data = base64.urlsafe_b64encode(raw_data.encode()).decode()
+    domain = request.host_url.rstrip('/')
+    url = f"{domain}/v#{encoded_data}"
+    
+    qr = qrcode.make(url)
     buf = BytesIO()
     qr.save(buf, format="PNG")
     return f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}"
@@ -48,6 +53,10 @@ def get_qr_base64(cert_id, name):
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/v')
+def mobile_viewer():
+    return render_template('mobile_view.html')
 
 @app.route('/generate', methods=['POST'])
 def generate():
@@ -57,14 +66,14 @@ def generate():
     photo_file = request.files.get('photo')
     
     cert_id = f"AK-{uuid.uuid4().hex[:8].upper()}"
-    qr_b64 = get_qr_base64(cert_id, name)
+    qr_b64 = get_qr_base64(name, roll, date, cert_id)
     photo_b64 = f"data:image/png;base64,{base64.b64encode(photo_file.read()).decode()}" if photo_file else ""
 
     svg_data = SVG_TEMPLATE.format(name=name, roll_no=roll, date=date, photo_base64=photo_b64, qr_base64=qr_b64, cert_id=cert_id)
     png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'))
     b64_img = base64.b64encode(png_data).decode()
     
-    certs = [{'name': name, 'roll': roll, 'image': f"data:image/png;base64,{b64_img}"}]
+    certs = [{'name': name, 'roll': roll, 'image': f"data:image/png;base64,{b64_img}", 'cert_id': cert_id}]
     return render_template('results.html', certificates=certs)
 
 @app.route('/bulk_generate', methods=['POST'])
@@ -76,12 +85,16 @@ def bulk_generate():
     for _, row in df.iterrows():
         cert_id = f"AK-{uuid.uuid4().hex[:8].upper()}"
         name, roll, date = str(row['name']).upper(), str(row['roll_no']), str(row['date'])
-        qr_b64 = get_qr_base64(cert_id, name)
+        
+        qr_b64 = get_qr_base64(name, roll, date, cert_id)
+        # Note: Empty photo for bulk speed
         svg_data = SVG_TEMPLATE.format(name=name, roll_no=roll, date=date, photo_base64="", qr_base64=qr_b64, cert_id=cert_id)
         png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'))
+        
         certificates.append({
             'name': name, 'roll': roll, 
-            'image': f"data:image/png;base64,{base64.b64encode(png_data).decode()}"
+            'image': f"data:image/png;base64,{base64.b64encode(png_data).decode()}",
+            'cert_id': cert_id
         })
     return render_template('results.html', certificates=certificates)
 

@@ -12,7 +12,8 @@
         img { width: 100%; height: auto; display: block; margin-bottom: 10px; }
         .btn { background: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; }
         .download-btn { background: #10b981; margin-top: 10px; }
-        @media print { .no-print, .download-btn, #searchInput { display: none; } .cert-card { box-shadow: none; page-break-after: always; display: block !important; } }
+        .id-box { background: #f1f5f9; padding: 10px; border-radius: 6px; margin: 10px 0; font-family: monospace; font-size: 14px; display: flex; justify-content: center; align-items: center; gap: 10px; border: 1px solid #cbd5e1; }
+        @media print { .no-print, .download-btn, #searchInput, .copy-link { display: none; } .cert-card { box-shadow: none; page-break-after: always; display: block !important; } }
     </style>
 </head>
 <body>
@@ -29,6 +30,12 @@
         {% for cert in certificates %}
         <div class="cert-card" data-search="{{ cert.name }} {{ cert.roll }}">
             <img src="{{ cert.image }}" id="img-{{ loop.index }}">
+            
+            <div class="id-box">
+                <span>Cert ID: <strong>{{ cert.cert_id }}</strong></span>
+                <button class="copy-link" onclick="copyId('{{ cert.cert_id }}')" style="font-size: 12px; cursor: pointer; border: none; background: #2c3e7b; color: white; padding: 4px 8px; border-radius: 4px;">Copy ID</button>
+            </div>
+
             <button onclick="downloadAsPDF('img-{{ loop.index }}', '{{ cert.name }}')" class="btn download-btn">Download Individual PDF ↓</button>
         </div>
         {% endfor %}
@@ -44,11 +51,14 @@
             }
         }
 
+        function copyId(text) {
+            navigator.clipboard.writeText(text);
+            alert("Certificate ID Copied: " + text);
+        }
+
         function downloadAsPDF(imgId, studentName) {
             const { jsPDF } = window.jspdf;
             const img = document.getElementById(imgId);
-            
-            // Create PDF in landscape
             const pdf = new jsPDF('l', 'px', [1200, 850]);
             pdf.addImage(img.src, 'PNG', 0, 0, 1200, 850);
             pdf.save(`${studentName.replace(/\s+/g, '_')}_Certificate.pdf`);
