@@ -2,72 +2,70 @@
 <html>
 <head>
     <title>Certificate Results</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; text-align: center; margin: 0; padding: 20px; }
         .no-print { margin-bottom: 30px; position: sticky; top: 0; background: #0f172a; padding: 20px 0; z-index: 100; border-bottom: 1px solid #334155; }
-        
-        #searchInput {
-            width: 300px; padding: 12px; border-radius: 6px; border: 1px solid #4a6cf7;
-            background: #1e293b; color: white; margin-top: 15px; font-size: 16px;
-        }
-
-        .cert-card { 
-            background: white; padding: 15px; border-radius: 8px; 
-            margin: 20px auto; width: 85%; max-width: 900px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); color: black;
-        }
-
+        #searchInput { width: 300px; padding: 12px; border-radius: 6px; border: 1px solid #4a6cf7; background: #1e293b; color: white; margin-top: 15px; }
+        .cert-card { background: white; padding: 15px; border-radius: 8px; margin: 20px auto; width: 85%; max-width: 900px; color: black; }
+        .cert-image-container { background: white; }
         img { width: 100%; height: auto; display: block; margin-bottom: 10px; }
-        
-        .btn { 
-            background: #3b82f6; color: white; padding: 10px 20px; 
-            text-decoration: none; border-radius: 6px; font-weight: bold; border: none; cursor: pointer;
-        }
-
+        .btn { background: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; }
         .download-btn { background: #10b981; margin-top: 10px; }
-
-        @media print {
-            .no-print, .download-btn, #searchInput { display: none; }
-            .cert-card { box-shadow: none; page-break-after: always; display: block !important; }
-        }
+        @media print { .no-print, .download-btn, #searchInput { display: none; } .cert-card { box-shadow: none; page-break-after: always; display: block !important; } }
     </style>
 </head>
 <body>
     <div class="no-print">
         <h1>Batch Processing Complete</h1>
-        <div style="display: flex; justify-content: center; gap: 10px; align-items: center;">
+        <div style="display: flex; justify-content: center; gap: 10px;">
             <a href="/" class="btn">← Back</a>
-            <button onclick="window.print()" class="btn">Print All</button>
+            <button onclick="window.print()" class="btn">Print All to PDF</button>
         </div>
         <input type="text" id="searchInput" onkeyup="searchFunction()" placeholder="Search Name or Roll Number...">
     </div>
     
     <div id="certList">
         {% for cert in certificates %}
-        <div class="cert-card" data-search="{{ cert.name }} {{ cert.roll }}">
-            <img src="{{ cert.image }}" alt="Certificate">
-            <form action="/download_pdf" method="POST">
-                <input type="hidden" name="svg_data" value="{{ cert.svg }}">
-                <input type="hidden" name="name" value="{{ cert.name }}">
-                <button type="submit" class="btn download-btn">Download PDF ↓</button>
-            </form>
+        <div class="cert-card" id="card-{{ loop.index }}" data-search="{{ cert.name }} {{ cert.roll }}">
+            <div class="cert-image-container">
+                <img src="{{ cert.image }}" id="img-{{ loop.index }}">
+            </div>
+            <button onclick="downloadSinglePDF('card-{{ loop.index }}', '{{ cert.name }}')" class="btn download-btn">Download Individual PDF ↓</button>
         </div>
         {% endfor %}
     </div>
 
     <script>
+        // Search functionality
         function searchFunction() {
             let input = document.getElementById('searchInput').value.toUpperCase();
             let cards = document.getElementsByClassName('cert-card');
-
             for (let i = 0; i < cards.length; i++) {
                 let content = cards[i].getAttribute('data-search');
-                if (content.toUpperCase().indexOf(input) > -1) {
-                    cards[i].style.display = "";
-                } else {
-                    cards[i].style.display = "none";
-                }
+                cards[i].style.display = content.toUpperCase().indexOf(input) > -1 ? "" : "none";
             }
+        }
+
+        // New Direct Download logic (Avoids "Entity Too Large" error)
+        async function downloadSinglePDF(elementId, studentName) {
+            const { jsPDF } = window.jspdf;
+            const element = document.querySelector(`#${elementId} img`);
+            
+            // Capture the image and put it in a PDF
+            const canvas = await html2canvas(element, { scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+            
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'px',
+                format: [canvas.width, canvas.height]
+            });
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+            pdf.save(`${studentName.replace(/\s+/g, '_')}_Certificate.pdf`);
         }
     </script>
 </body>
