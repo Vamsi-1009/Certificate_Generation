@@ -81,7 +81,8 @@ def bulk_generate():
     os.makedirs(folder_path, exist_ok=True)
     
     # FIX: Connect using the DB_URI from Render Environment Variables
-    conn = psycopg2.connect(DB_URI)
+    conn = psycopg2.connect(os.environ.get('postgresql://postgres:KIET12schooloftheyear@db.vpzcsgbwyjpvitwudohk.supabase.co:5432/postgres')
+    '))
     cur = conn.cursor()
 
     for _, row in df.iterrows():
