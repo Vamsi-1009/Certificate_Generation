@@ -16,6 +16,7 @@ BATCH_DEST = '/tmp/batches'
 os.makedirs(BATCH_DEST, exist_ok=True)
 
 # This grabs the connection string from your Render Environment Variables
+# It looks for the KEY 'DATABASE_URL' that you set in the Render Dashboard
 DB_URI = os.environ.get('postgresql://postgres:KIET12schooloftheyear@db.vpzcsgbwyjpvitwudohk.supabase.co:5432/postgres')
 
 # The Landscape SVG Template
@@ -43,7 +44,6 @@ SVG_TEMPLATE = """
 """
 
 def get_qr_base64(cert_id):
-    # Dynamically detects your Render URL for the QR code
     domain = request.host_url.rstrip('/')
     url = f"{domain}/verify/{cert_id}"
     qr = qrcode.make(url)
@@ -80,9 +80,8 @@ def bulk_generate():
     folder_path = os.path.join(BATCH_DEST, batch_id)
     os.makedirs(folder_path, exist_ok=True)
     
-    # FIX: Connect using the DB_URI from Render Environment Variables
-    conn = psycopg2.connect(os.environ.get('postgresql://postgres:KIET12schooloftheyear@db.vpzcsgbwyjpvitwudohk.supabase.co:5432/postgres')
-    '))
+    # Connect using the DB_URI variable defined at the top
+    conn = psycopg2.connect(postgresql://postgres:KIET12schooloftheyear@db.vpzcsgbwyjpvitwudohk.supabase.co:5432/postgres)
     cur = conn.cursor()
 
     for _, row in df.iterrows():
@@ -110,7 +109,6 @@ def bulk_generate():
 
 @app.route('/verify/<cert_id>')
 def verify(cert_id):
-    # FIX: Connect using the DB_URI
     conn = psycopg2.connect(DB_URI)
     cur = conn.cursor()
     cur.execute("SELECT name, roll_no, issue_date FROM certificates WHERE cert_id=%s", (cert_id,))
