@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Certificate Results</title>
+    <style>
+        /* This is what you see on the screen */
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; text-align: center; margin: 0; padding: 20px; }
+        .no-print { margin-bottom: 30px; }
+        .cert-card { 
+            background: white; padding: 15px; border-radius: 8px; 
+            margin: 20px auto; width: 85%; max-width: 900px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+        img { width: 100%; height: auto; display: block; }
+        .btn { 
+            background: #3b82f6; color: white; padding: 12px 24px; 
+            text-decoration: none; border-radius: 6px; font-weight: bold;
+        }
+
+        /* This is what the printer sees */
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .no-print { display: none; } /* Hides buttons when printing */
+            .cert-card { 
+                box-shadow: none; margin: 0; padding: 0; width: 100%; 
+                max-width: none; page-break-after: always; /* One cert per page */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <h1>Batch Processing Complete</h1>
+        <p>Review the certificates below. Use <b>Ctrl + P</b> to save as PDF or Print.</p>
+        <a href="/" class="btn">← Back to Upload</a>
+        <button onclick="window.print()" class="btn" style="background: #10b981; border:none; cursor:pointer;">Print All Certificates</button>
+    </div>
+    
+    {% for cert in certificates %}
+    <div class="cert-card">
+        <img src="{{ cert.image }}" alt="Certificate for {{ cert.name }}">
+    </div>
+    {% endfor %}
+</body>
+</html>

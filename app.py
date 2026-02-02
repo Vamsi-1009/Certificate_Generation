@@ -1,23 +1,13 @@
-import psycopg2
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request
 import pandas as pd
 import uuid
 import qrcode
 import base64
 import cairosvg
 import os
-import zipfile
 from io import BytesIO
 
 app = Flask(__name__)
-
-# Render uses /tmp for temporary file processing during runtime
-BATCH_DEST = '/tmp/batches'
-os.makedirs(BATCH_DEST, exist_ok=True)
-
-# This grabs the connection string from your Render Environment Variables
-# Use 'DATABASE_URL' as the key name
-DB_URI = os.environ.get('postgresql://postgres:KIET12schooloftheyear@db.vpzcsgbwyjpvitwudohk.supabase.co:5432/postgres')
 
 # The Landscape SVG Template
 SVG_TEMPLATE = """
@@ -43,10 +33,9 @@ SVG_TEMPLATE = """
 </svg>
 """
 
-def get_qr_base64(cert_id):
-    domain = request.host_url.rstrip('/')
-    url = f"{domain}/verify/{cert_id}"
-    qr = qrcode.make(url)
+def get_qr_base64(cert_id, name):
+    info = f"Verified: {name}\nID: {cert_id}"
+    qr = qrcode.make(info)
     buf = BytesIO()
     qr.save(buf, format="PNG")
     return f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode()}"
@@ -55,69 +44,37 @@ def get_qr_base64(cert_id):
 def index():
     return render_template('index.html')
 
-@app.route('/generate', methods=['POST'])
-def generate():
-    name = request.form.get('name').upper()
-    roll = request.form.get('roll_no')
-    date = request.form.get('date')
-    photo_file = request.files['photo']
-    
-    cert_id = f"AK-{uuid.uuid4().hex[:8].upper()}"
-    qr_b64 = get_qr_base64(cert_id)
-    photo_b64 = f"data:image/png;base64,{base64.b64encode(photo_file.read()).decode()}" if photo_file else ""
-
-    svg_data = SVG_TEMPLATE.format(name=name, roll_no=roll, date=date, photo_base64=photo_b64, qr_base64=qr_b64, cert_id=cert_id)
-    
-    pdf_path = os.path.join(BATCH_DEST, f"{cert_id}.pdf")
-    cairosvg.svg2pdf(bytestring=svg_data.encode('utf-8'), write_to=pdf_path)
-    return send_file(pdf_path, as_attachment=True)
-
 @app.route('/bulk_generate', methods=['POST'])
 def bulk_generate():
+    if 'csv_file' not in request.files:
+        return "No file uploaded", 400
+        
     file = request.files['csv_file']
     df = pd.read_csv(file)
-    batch_id = uuid.uuid4().hex[:6]
-    folder_path = os.path.join(BATCH_DEST, batch_id)
-    os.makedirs(folder_path, exist_ok=True)
-    
-    # Use the variable DB_URI we defined at the top
-    # Copy and paste this exact line into your app.py
-    conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
-    cur = conn.cursor()
+    certificates = []
 
     for _, row in df.iterrows():
         cert_id = f"AK-{uuid.uuid4().hex[:8].upper()}"
-        name, roll, date = str(row['name']).upper(), str(row['roll_no']), str(row['date'])
+        name = str(row['name']).upper()
+        roll = str(row['roll_no'])
+        date = str(row['date'])
 
-        cur.execute("INSERT INTO certificates (cert_id, name, roll_no, issue_date) VALUES (%s, %s, %s, %s)",
-                    (cert_id, name, roll, date))
-
-        qr_b64 = get_qr_base64(cert_id)
+        qr_b64 = get_qr_base64(cert_id, name)
+        
+        # Create SVG string
         svg_data = SVG_TEMPLATE.format(name=name, roll_no=roll, date=date, photo_base64="", qr_base64=qr_b64, cert_id=cert_id)
         
-        cairosvg.svg2pdf(bytestring=svg_data.encode('utf-8'), write_to=os.path.join(folder_path, f"{roll}.pdf"))
+        # Convert SVG to PNG Base64 so it can display in the browser
+        png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'))
+        b64_img = base64.b64encode(png_data).decode()
+        
+        certificates.append({
+            'name': name,
+            'roll': roll,
+            'image': f"data:image/png;base64,{b64_img}"
+        })
 
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    zip_path = f"{folder_path}.zip"
-    with zipfile.ZipFile(zip_path, 'w') as z:
-        for f in os.listdir(folder_path):
-            z.write(os.path.join(folder_path, f), f)
-
-    return send_file(zip_path, as_attachment=True)
-
-@app.route('/verify/<cert_id>')
-def verify(cert_id):
-    conn = psycopg2.connect(DB_URI)
-    cur = conn.cursor()
-    cur.execute("SELECT name, roll_no, issue_date FROM certificates WHERE cert_id=%s", (cert_id,))
-    res = cur.fetchone()
-    cur.close()
-    conn.close()
-    if res: return render_template('verify.html', name=res[0], roll=res[1], date=res[2])
-    return "Verification Link Expired or Invalid", 404
+    return render_template('results.html', certificates=certificates)
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
