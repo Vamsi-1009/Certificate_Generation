@@ -81,7 +81,8 @@ def bulk_generate():
     os.makedirs(folder_path, exist_ok=True)
     
     # Use the variable DB_URI we defined at the top
-    conn = psycopg2.connect(os.environ.get('postgresql://postgres:KIET12schooloftheyear@db.vpzcsgbwyjpvitwudohk.supabase.co:5432/postgres'))
+    # Copy and paste this exact line into your app.py
+    conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
     cur = conn.cursor()
 
     for _, row in df.iterrows():
