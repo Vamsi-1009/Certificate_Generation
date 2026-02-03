@@ -39,19 +39,15 @@ SVG_TEMPLATE = """
 """
 
 def get_qr_base64(name, roll, date, cert_id):
-    # Optimized data string: shorter separators save space in the QR
     raw_data = f"{name};{roll};{date};{cert_id}"
     encoded_data = base64.urlsafe_b64encode(raw_data.encode()).decode()
-    
-    # Ensure domain is clean for mobile browsers
     domain = request.host_url.rstrip('/')
     url = f"{domain}/v#{encoded_data}"
     
-    # QR Configuration for Maximum Scannability
     qr = qrcode.QRCode(
         version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L, # Low error correction = larger blocks
-        box_size=10, # Increases size of each dot
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
         border=2,
     )
     qr.add_data(url)
@@ -92,18 +88,41 @@ def generate():
 def bulk_generate():
     file = request.files.get('csv_file')
     if not file: return "No file", 400
+    
     df = pd.read_csv(file)
+    
+    # NEW: Standardize Google Form column names by making them lowercase and stripping spaces
+    df.columns = [c.strip().lower() for c in df.columns]
+    
     certificates = []
     for _, row in df.iterrows():
         cert_id = f"AK-{uuid.uuid4().hex[:8].upper()}"
-        name, roll, date = str(row['name']).upper(), str(row['roll_no']), str(row['date'])
         
-        qr_b64 = get_qr_base64(name, roll, date, cert_id)
-        svg_data = SVG_TEMPLATE.format(name=name, roll_no=roll, date=date, photo_base64="", qr_base64=qr_b64, cert_id=cert_id)
+        # NEW: Handle Google Form Mapping
+        name = str(row.get('name', 'Unknown')).upper()
+        roll = str(row.get('roll no', 'N/A'))
+        
+        # Get date from Timestamp if a 'date' column doesn't exist
+        full_timestamp = str(row.get('timestamp', ''))
+        date_val = str(row.get('date', full_timestamp.split(' ')[0]))
+
+        qr_b64 = get_qr_base64(name, roll, date_val, cert_id)
+        
+        # SVG creation (Photo is left empty in bulk mode for speed)
+        svg_data = SVG_TEMPLATE.format(
+            name=name, 
+            roll_no=roll, 
+            date=date_val, 
+            photo_base64="", 
+            qr_base64=qr_b64, 
+            cert_id=cert_id
+        )
+        
         png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'))
         
         certificates.append({
-            'name': name, 'roll': roll, 
+            'name': name, 
+            'roll': roll, 
             'image': f"data:image/png;base64,{base64.b64encode(png_data).decode()}",
             'cert_id': cert_id
         })
