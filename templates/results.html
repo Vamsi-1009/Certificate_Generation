@@ -1,21 +1,105 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Certificate Results</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
+
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: white; text-align: center; margin: 0; padding: 20px; }
-        .no-print { margin-bottom: 30px; position: sticky; top: 0; background: #0f172a; padding: 20px 0; z-index: 100; border-bottom: 1px solid #334155; }
-        #searchInput { width: 300px; padding: 12px; border-radius: 6px; border: 1px solid #4a6cf7; background: #1e293b; color: white; margin-top: 15px; }
-        .cert-card { background: white; padding: 15px; border-radius: 8px; margin: 20px auto; width: 85%; max-width: 900px; color: black; }
-        img { width: 100%; height: auto; display: block; margin-bottom: 10px; }
-        .btn { background: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; }
-        .download-btn { background: #10b981; margin-top: 10px; }
-        .id-box { background: #f1f5f9; padding: 10px; border-radius: 6px; margin: 10px 0; font-family: monospace; font-size: 14px; display: flex; justify-content: center; align-items: center; gap: 10px; border: 1px solid #cbd5e1; }
-        @media print { .no-print, .download-btn, #searchInput, .copy-link { display: none; } .cert-card { box-shadow: none; page-break-after: always; display: block !important; } }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .no-print {
+            margin-bottom: 30px;
+            position: sticky;
+            top: 0;
+            background: #0f172a;
+            padding: 20px 0;
+            z-index: 100;
+            border-bottom: 1px solid #334155;
+        }
+
+        #searchInput {
+            width: 300px;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #4a6cf7;
+            background: #1e293b;
+            color: white;
+            margin-top: 15px;
+        }
+
+        .cert-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px auto;
+            width: 85%;
+            max-width: 900px;
+            color: black;
+        }
+
+        img {
+            width: 100%;
+            height: auto;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            background: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+
+        .download-btn {
+            background: #10b981;
+            margin-top: 10px;
+        }
+
+        .id-box {
+            background: #f1f5f9;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid #cbd5e1;
+        }
+
+        @media print {
+
+            .no-print,
+            .download-btn,
+            #searchInput,
+            .copy-link {
+                display: none;
+            }
+
+            .cert-card {
+                box-shadow: none;
+                page-break-after: always;
+                display: block !important;
+            }
+        }
     </style>
 </head>
+
 <body>
     <div class="no-print">
         <h1>Batch Processing Complete</h1>
@@ -24,19 +108,17 @@
             <button onclick="window.print()" class="btn">Print All to PDF</button>
         </div>
         <input type="text" id="searchInput" onkeyup="searchFunction()" placeholder="Search Name or Roll Number...">
+        <p style="color: #94a3b8; font-size: 12px; margin-top: 10px;">Note: Images are generated at high resolution (A4
+            Landscape).</p>
     </div>
-    
+
     <div id="certList">
         {% for cert in certificates %}
         <div class="cert-card" data-search="{{ cert.name }} {{ cert.roll }}">
             <img src="{{ cert.image }}" id="img-{{ loop.index }}">
-            
-            <div class="id-box">
-                <span>Cert ID: <strong>{{ cert.cert_id }}</strong></span>
-                <button class="copy-link" onclick="copyId('{{ cert.cert_id }}')" style="font-size: 12px; cursor: pointer; border: none; background: #2c3e7b; color: white; padding: 4px 8px; border-radius: 4px;">Copy ID</button>
-            </div>
 
-            <button onclick="downloadAsPDF('img-{{ loop.index }}', '{{ cert.name }}')" class="btn download-btn">Download Individual PDF ↓</button>
+            <button onclick="downloadAsPDF('img-{{ loop.index }}', '{{ cert.name }}')" class="btn download-btn">Download
+                Individual PDF ↓</button>
         </div>
         {% endfor %}
     </div>
@@ -59,10 +141,12 @@
         function downloadAsPDF(imgId, studentName) {
             const { jsPDF } = window.jspdf;
             const img = document.getElementById(imgId);
-            const pdf = new jsPDF('l', 'px', [1200, 850]);
-            pdf.addImage(img.src, 'PNG', 0, 0, 1200, 850);
+            // Height/Width for A4 at high res
+            const pdf = new jsPDF('l', 'px', [3508, 2480]);
+            pdf.addImage(img.src, 'PNG', 0, 0, 3508, 2480);
             pdf.save(`${studentName.replace(/\s+/g, '_')}_Certificate.pdf`);
         }
     </script>
 </body>
+
 </html>

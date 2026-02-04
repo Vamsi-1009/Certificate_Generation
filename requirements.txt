@@ -2,4 +2,6 @@ flask
 pandas
 cairosvg
 qrcode
+Pillow
+requests
 gunicorn
