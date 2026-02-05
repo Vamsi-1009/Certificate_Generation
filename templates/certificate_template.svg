@@ -1,0 +1,84 @@
+<svg width="3508" height="2480" viewBox="0 0 3508 2480" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+        <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#1e3a8a;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#172554;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+    
+    <!-- Background -->
+    <rect width="3508" height="2480" fill="#ffffff"/>
+    
+    <!-- Outer Gradient Border (Width 40) -->
+    <rect x="20" y="20" width="3468" height="2440" fill="none" stroke="url(#borderGrad)" stroke-width="40"/>
+    
+    <!-- Inner Thin Border -->
+    <rect x="60" y="60" width="3388" height="2360" fill="none" stroke="#93c5fd" stroke-width="5"/>
+
+    <!-- ================= ID CARD SECTION (Left) ================= -->
+    <g transform="translate(250, 1150)">
+        <!-- Lanyard Strap (fully extended to top) -->
+        <rect x="240" y="-1150" width="120" height="1200" fill="#1e40af"/>
+        
+        <!-- ID Card Body -->
+        <rect x="0" y="50" width="600" height="950" rx="30" fill="url(#cardGrad)" filter="drop-shadow(10px 10px 20px rgba(0,0,0,0.5))"/>
+        
+        <!-- Header Strip -->
+        <rect x="0" y="50" width="600" height="250" rx="30" fill="rgba(255,255,255,0.1)"/>
+        <!-- Header Text -->
+        <text x="60" y="190" font-family="Arial, sans-serif" font-weight="bold" font-size="50" fill="#ffffff">AI Karyashala</text>
+        
+        <!-- Photo Container (Centered at 300) -->
+        <!-- box width 320, so x = 300 - 160 = 140 -->
+        <rect x="140" y="320" width="320" height="400" fill="#ffffff"/>
+        <!-- User Photo -->
+        <image x="150" y="330" width="300" height="380" href="{photo_base64}" preserveAspectRatio="xMidYMid slice"/>
+        
+        <!-- Participant Name on ID Card -->
+        <!-- x=300 for center -->
+        <text x="300" y="765" font-family="Arial, sans-serif" font-weight="bold" font-size="{id_name_fontsize}" fill="#ffffff" text-anchor="middle">{id_name_content}</text>
+        
+        <!-- QR Code Lower Right -->
+        <!-- ID Card width 600. Right edge 600. QR box 150. -->
+        <!-- Position at x=430 (20px padding from right), y=830 (20px padding from bottom 1000) -->
+        <rect x="430" y="830" width="150" height="150" fill="#ffffff"/>
+        <image x="435" y="835" width="140" height="140" href="{qr_base64}"/>
+    </g>
+
+    <!-- ================= MAIN CERTIFICATE TEXT (Right) ================= -->
+    <!-- Center text around x=2100 -->
+    
+    <!-- Certificate ID (Top Right) -->
+    <text x="3300" y="200" font-family="Arial, sans-serif" font-size="40" fill="#64748b" text-anchor="end">Certificate ID: {cert_id}</text>
+    
+    <!-- Main Header -->
+    <text x="2100" y="500" font-family="Georgia, serif" font-weight="bold" font-size="100" fill="#172554" text-anchor="middle">CERTIFICATE OF PARTICIPATION</text>
+    <line x1="1300" y1="540" x2="2900" y2="540" stroke="#2563eb" stroke-width="5"/>
+    
+    <!-- Event Name -->
+    <text x="2100" y="720" font-family="Arial, sans-serif" font-weight="bold" font-size="90" fill="#1e40af" text-anchor="middle">AI KARYASHALA</text>
+    <text x="2100" y="810" font-family="Arial, sans-serif" font-size="60" fill="#3b82f6" text-anchor="middle">AI Awareness &amp; Hands-on Bootcamp</text>
+    
+    <!-- Student Name -->
+    <text x="2100" y="1100" font-family="Georgia, serif" font-weight="bold" font-size="160" fill="#0f172a" text-anchor="middle">{name}</text>
+    <line x1="1500" y1="1130" x2="2700" y2="1130" stroke="#1e3a8a" stroke-width="4"/>
+    
+    <!-- Body Text -->
+    <text x="2100" y="1300" font-family="Times New Roman, serif" font-style="italic" font-size="55" fill="#374151" text-anchor="middle">has participated in the "AI KARYASHALA"</text>
+    <text x="2100" y="1380" font-family="Times New Roman, serif" font-weight="bold" font-size="55" fill="#374151" text-anchor="middle">AI Awareness &amp; Hands-on Bootcamp</text>
+    <text x="2100" y="1460" font-family="Times New Roman, serif" font-style="italic" font-size="55" fill="#374151" text-anchor="middle">conducted at</text>
+    <text x="2100" y="1540" font-family="Times New Roman, serif" font-weight="bold" font-size="60" fill="#1f2937" text-anchor="middle">KIET, KAKINADA.</text>
+
+    <!-- Footer Line -->
+    <line x1="1000" y1="2100" x2="3200" y2="2100" stroke="#e2e8f0" stroke-width="2"/>
+    
+    <!-- Signature -->
+    <text x="3100" y="2070" font-family="Arial, sans-serif" font-weight="bold" font-size="45" fill="#1f2937" text-anchor="end">Coordinator / Trainer</text>
+    <!-- Fixed Signature Image -->
+    <image x="2600" y="1850" width="550" height="180" href="{signature_base64}"/>
+    
+</svg>

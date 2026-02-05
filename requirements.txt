@@ -5,3 +5,5 @@ qrcode
 Pillow
 requests
 gunicorn
+openpyxl
+pdfplumber

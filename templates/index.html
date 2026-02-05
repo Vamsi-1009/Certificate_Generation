@@ -78,51 +78,19 @@
 
 <body>
     <div class="card">
-        <h2>Single Generation</h2>
-        <form action="/generate" method="POST" enctype="multipart/form-data">
-            <label>Full Name</label>
-            <input type="text" name="name" placeholder="Rama Krishna" required>
-            <label>Roll Number</label>
-            <input type="text" name="roll_no" placeholder="22A81A..." required>
-            <label>Issue Date</label>
-            <input type="date" name="date" required>
-            <label>Passport Photo</label>
-            <input type="file" name="photo" accept="image/*" required>
-            <button type="submit" class="btn">View Certificate ✅</button>
+        <h2>Certificate Generator</h2>
+        <form action="/smart" method="POST" enctype="multipart/form-data">
+            <label>1. Upload Student Data File</label>
+            <p style="font-size: 12px; color: #94a3b8; margin: 4px 0 10px 0;">Supported: CSV, Excel (.xlsx), PDF</p>
+            <input type="file" name="data_file" accept=".csv, .xlsx, .xls, .pdf" required>
+
+            <label>2. Upload Photos (Optional)</label>
+            <p style="font-size: 12px; color: #94a3b8; margin: 4px 0 10px 0;">ZIP file containing student images</p>
+            <input type="file" name="photos_zip" accept=".zip">
+
+            <button type="submit" class="btn" style="background: #4a6cf7; margin-top: 10px;">Generate & Download ZIP
+                🚀</button>
         </form>
-
-        <div class="bulk-section">
-            <h2>Bulk Processing</h2>
-            <form action="/bulk_generate" method="POST" enctype="multipart/form-data">
-                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">Upload CSV (name, roll_no, date)</p>
-                <input type="file" name="csv_file" accept=".csv" required>
-                <button type="submit" class="btn" style="background: #10b981;">Process Bulk List 🧾</button>
-            </form>
-        </div>
-
-        <div class="bulk-section">
-            <h2 style="color: #f59e0b;">Step 1: Download Photos (Optional)</h2>
-            <form action="/download_photos_from_csv" method="POST" enctype="multipart/form-data">
-                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">Upload Google Form CSV to get Photo ZIP
-                </p>
-                <input type="file" name="csv_file" accept=".csv" required>
-                <button type="submit" class="btn" style="background: #f59e0b;">Download Photo ZIP ⬇️</button>
-            </form>
-        </div>
-
-        <div class="bulk-section">
-            <h2>Step 2: Generate Certificates</h2>
-            <form action="/bulk_generate_zip" method="POST" enctype="multipart/form-data">
-                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">1. Upload CSV (name, roll_no)</p>
-                <input type="file" name="csv_file" accept=".csv" required>
-
-                <p style="font-size: 12px; color: #94a3b8; margin-bottom: 10px;">2. Upload ZIP with Photos (filename =
-                    roll no)</p>
-                <input type="file" name="photos_zip" accept=".zip" required>
-
-                <button type="submit" class="btn" style="background: #8b5cf6;">Process Bulk + Photos 📸</button>
-            </form>
-        </div>
     </div>
 </body>
 
