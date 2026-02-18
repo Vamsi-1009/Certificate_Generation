@@ -61,24 +61,32 @@
     
     <!-- Event Name -->
     <text x="2100" y="720" font-family="Arial, sans-serif" font-weight="bold" font-size="90" fill="#1e40af" text-anchor="middle">AI KARYASHALA</text>
-    <text x="2100" y="810" font-family="Arial, sans-serif" font-size="60" fill="#3b82f6" text-anchor="middle">AI Awareness &amp; Hands-on Bootcamp</text>
+    <text x="2100" y="810" font-family="Arial, sans-serif" font-size="60" fill="#3b82f6" text-anchor="middle">AI  Awareness &amp; Hands-on Bootcamp</text>
     
     <!-- Student Name -->
-    <text x="2100" y="1100" font-family="Georgia, serif" font-weight="bold" font-size="160" fill="#0f172a" text-anchor="middle">{name}</text>
+    <text x="2100" y="1100" font-family="Georgia, serif" font-weight="bold" font-size="{main_name_fontsize}" fill="#0f172a" text-anchor="middle">{name}</text>
     <line x1="1500" y1="1130" x2="2700" y2="1130" stroke="#1e3a8a" stroke-width="4"/>
     
     <!-- Body Text -->
     <text x="2100" y="1300" font-family="Times New Roman, serif" font-style="italic" font-size="55" fill="#374151" text-anchor="middle">has participated in the "AI KARYASHALA"</text>
-    <text x="2100" y="1380" font-family="Times New Roman, serif" font-weight="bold" font-size="55" fill="#374151" text-anchor="middle">AI Awareness &amp; Hands-on Bootcamp</text>
+    <text x="2100" y="1380" font-family="Times New Roman, serif" font-weight="bold" font-size="55" fill="#374151" text-anchor="middle">AI  Awareness &amp; Hands-on Bootcamp</text>
     <text x="2100" y="1460" font-family="Times New Roman, serif" font-style="italic" font-size="55" fill="#374151" text-anchor="middle">conducted at</text>
     <text x="2100" y="1540" font-family="Times New Roman, serif" font-weight="bold" font-size="60" fill="#1f2937" text-anchor="middle">KIET, KAKINADA.</text>
 
     <!-- Footer Line -->
     <line x1="1000" y1="2100" x2="3200" y2="2100" stroke="#e2e8f0" stroke-width="2"/>
     
-    <!-- Signature -->
-    <text x="3100" y="2070" font-family="Arial, sans-serif" font-weight="bold" font-size="45" fill="#1f2937" text-anchor="end">Coordinator / Trainer</text>
+    <!-- Signature Section -->
+    <!-- Name under signature -->
+    <text x="3100" y="2060" font-family="Times New Roman, serif" font-weight="bold" font-size="50" fill="#000000" text-anchor="end">Rohini Kumar Barla</text>
+    <!-- Role -->
+    <text x="3100" y="2110" font-family="Arial, sans-serif" font-weight="bold" font-size="45" fill="#1f2937" text-anchor="end">Founder of AI Karyashala</text>
+    
     <!-- Fixed Signature Image -->
-    <image x="2600" y="1850" width="550" height="180" href="{signature_base64}"/>
+    <!-- Position adjusted slightly -->
+    <image x="2600" y="1860" width="550" height="180" href="{signature_base64}"/>
+    
+    <!-- Date of Issue -->
+    <text x="1300" y="2070" font-family="Arial, sans-serif" font-weight="bold" font-size="45" fill="#1f2937">Date of Issue: {date}</text>
     
 </svg>

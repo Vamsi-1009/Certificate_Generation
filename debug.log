@@ -1,5 +1,0 @@
-DEBUG: csv loaded. columns: Index(['Name', 'Roll No', 'Date'], dtype='str')
-DEBUG: certificates count: 2
-DEBUG: ZIP certificates count: 1
-DEBUG: csv loaded. columns: Index(['Name', 'Roll No', 'Date'], dtype='str')
-DEBUG: csv loaded. columns: Index(['Name', 'Roll No', 'Date'], dtype='str')

@@ -1,4 +1,6 @@
-from flask import Flask, render_template, request
+import sys
+import flask
+from flask import Flask, render_template, request, send_file
 import pandas as pd
 import shutil
 from smart_ingestion import SmartIngestor
@@ -28,29 +30,29 @@ def load_svg_template():
 
 def get_wrapped_name_svg(name):
     """Wrap name for ID card into SVG tspans with dynamic font size."""
+    # Clean non-ascii
+    name = re.sub(r'[^\x00-\x7F]+', '', name).strip()
+    
     words = name.split()
     if not words: return "", 50
     
     full_name_len = len(name)
     
-    # Case 1: Short name (1 line)
-    if full_name_len <= 15:
-        return f'<tspan x="300" dy="1.2em">{name}</tspan>', 45
+    # IMPROVED: Prefer single line if possible up to 20 chars
+    if full_name_len <= 20:
+        fontsize = 45 if full_name_len <= 15 else 35
+        return f'<tspan x="300" dy="1.2em">{name}</tspan>', fontsize
     
     # Case 2: Medium name (2 lines) - split evenly-ish
-    if full_name_len <= 30:
+    if full_name_len <= 35:
         mid = len(words) // 2
         if len(words) > 1:
-            line1 = " ".join(words[:mid+1]) if mid < len(words) else " ".join(words) # bias to top line slightly or just simple split
-            # Better split logic: fill line 1
             line1 = words[0]
             line2_words = words[1:]
-            
-            # Try to balance if multiple words
             current_len = len(line1)
             idx = 1
             while idx < len(words):
-                if current_len + 1 + len(words[idx]) < 18: # arbitrary char limit for top line
+                if current_len + 1 + len(words[idx]) < 18: 
                     line1 += " " + words[idx]
                     current_len += 1 + len(words[idx])
                     idx += 1
@@ -60,7 +62,7 @@ def get_wrapped_name_svg(name):
             return f'<tspan x="300" dy="0">{line1}</tspan><tspan x="300" dy="1.2em">{line2}</tspan>', 40
         else:
              # Single long word
-             return f'<tspan x="300" dy="1.2em">{name}</tspan>', 35
+             return f'<tspan x="300" dy="1.2em">{name}</tspan>', 30
 
     # Case 3: Long name (2-3 lines)
     # Simple strategy: Max 3 lines
@@ -87,10 +89,12 @@ def get_wrapped_name_svg(name):
              svg_lines.append(f'<tspan x="300" dy="1.1em">{l}</tspan>')
          return "".join(svg_lines), 30
 
-def get_qr_base64(name, roll, date, cert_id):
+def get_qr_base64(name, roll, date, cert_id, domain=None):
     raw_data = f"{name};{roll};{date};{cert_id}"
     encoded_data = base64.urlsafe_b64encode(raw_data.encode()).decode()
-    domain = request.host_url.rstrip('/')
+    if not domain:
+        # Fallback if no domain passed (e.g. single gen route)
+        domain = request.host_url.rstrip('/')
     url = f"{domain}/v#{encoded_data}"
     
     qr = qrcode.QRCode(
@@ -192,71 +196,172 @@ def smart_generate():
             photos_zip.save(photo_zip_path)
             ingestor.process_images(zip_path=photo_zip_path)
         
-        # Generate Certificates
-        records = ingestor.get_records()
+        # Prepare for Batch Processing
+        import subprocess
+        import json
         
-        # Get fixed signature
-        with open("signature.png", "rb") as f:
-            sig_b64 = f"data:image/png;base64,{base64.b64encode(f.read()).decode()}"
+        # Save records to JSON
+        records_path = os.path.join(run_dir, 'records.json')
+        with open(records_path, 'w') as f:
+            json.dump(records, f)
             
-        svg_template = load_svg_template()
+        # Save Metadata
+        metadata = {
+            'total': len(records),
+            'timestamp': time.time(),
+            'status': 'processing'
+        }
+        metadata_path = os.path.join(run_dir, 'metadata.json')
+        with open(metadata_path, 'w') as f:
+            json.dump(metadata, f)
+            
+        # Paths for worker
+        template_path = os.path.join(app.root_path, 'templates', 'certificate_template.svg')
+        signature_path = os.path.join(app.root_path, 'signature.png')
+        domain = request.host_url.rstrip('/')
         
-        count = 0
-        for rec in records:
-            name = str(rec.get('name', 'Unknown')).upper()
-            roll = str(rec.get('roll', 'N/A')).upper()
-            date_val = str(rec.get('date', '2024')) 
-            
-            cert_id = f"AIK{roll}"
-            qr_b64 = get_qr_base64(name, roll, date_val, cert_id)
-            photo_b64 = rec.get('photo_base64', '')
-            
-            id_name_content, id_name_fontsize = get_wrapped_name_svg(name)
-            svg_data = svg_template.format(
-                name=name, 
-                roll_no=roll, 
-                photo_base64=photo_b64, 
-                qr_base64=qr_b64, 
-                cert_id=cert_id,
-                signature_base64=sig_b64,
-                id_name_content=id_name_content,
-                id_name_fontsize=id_name_fontsize
-            )
-            
-            png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'))
-            
-            # Save PNG to disk
-            # Sanitize filename
-            safe_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', name)
-            safe_roll = re.sub(r'[^a-zA-Z0-9_\-]', '_', roll)
-            filename = f"{safe_roll}_{safe_name}.png"
-            with open(os.path.join(img_out_dir, filename), 'wb') as f:
-                f.write(png_data)
-            count += 1
-            
-        # Zip the output directory
-        shutil.make_archive(img_out_dir, 'zip', img_out_dir)
-        final_zip_path = img_out_dir + '.zip'
+        # Spawn Async Worker
+        print("DEBUG: Spawning batch_processor.py details...")
+        cmd = [
+            sys.executable, 'batch_processor.py', 
+            '--run_dir', run_dir,
+            '--domain', domain,
+            '--template', template_path,
+            '--signature', signature_path
+        ]
         
-        return send_file(final_zip_path, as_attachment=True, download_name='Certificates.zip')
+        # Use Popen to run in background (independent process)
+        # On Windows, we need creationflags=subprocess.DETACHED_PROCESS or shell=True to avoid killing it if parent dies? 
+        # Actually standard Popen is fine as long as we don't wait()
+        # creationflags=0x00000008 (DETACHED_PROCESS) is good but tricky with console.
+        # simple Popen is usually enough for "fire and forget" in this context
+        
+        subprocess.Popen(cmd)
+        
+        print("DEBUG: Async worker spawned. Redirecting to preview.")
+        return flask.redirect(flask.url_for('preview_route', run_id=run_id))
 
     except Exception as e:
         log_error(e)
         return f"Internal Server Error: {e}", 500
-    # Note: We are relying on the startup cleanup logic to clear this run's files later, 
-    # because deleting them immediately after 'return' is tricky with send_file unless using streams.
+
+@app.route('/preview/<run_id>')
+def preview_route(run_id):
+    """Show preview of generated certificates."""
+    base_temp_dir = os.path.join(app.root_path, 'temp_runs')
+    run_dir = os.path.join(base_temp_dir, run_id)
+    img_out_dir = os.path.join(run_dir, 'certificates')
+    metadata_path = os.path.join(run_dir, 'metadata.json')
+    
+    if not os.path.exists(run_dir):
+        return "Run ID not found or expired.", 404
+        
+    filenames = []
+    if os.path.exists(img_out_dir):
+        filenames = sorted([f for f in os.listdir(img_out_dir) if f.lower().endswith('.png')])
+        
+    total_count = 0
+    if os.path.exists(metadata_path):
+        try:
+            with open(metadata_path, 'r') as f:
+                meta = json.load(f)
+                total_count = meta.get('total', 0)
+        except: pass
+        
+    if total_count == 0: total_count = len(filenames) # fallback
+    
+    return render_template('preview.html', run_id=run_id, filenames=filenames, total_count=total_count, current_count=len(filenames))
+
+@app.route('/download/zip/<run_id>')
+def download_zip_route(run_id):
+    """Download certificates as ZIP."""
+    base_temp_dir = os.path.join(app.root_path, 'temp_runs')
+    run_dir = os.path.join(base_temp_dir, run_id)
+    img_out_dir = os.path.join(run_dir, 'certificates')
+    
+    if not os.path.exists(img_out_dir):
+        return "Run ID not found.", 404
+        
+    # Zip the output directory if not already zipped? 
+    # Or just re-zip to be safe (or check if exists)
+    zip_path = os.path.join(run_dir, 'Certificates.zip')
+    if not os.path.exists(zip_path):
+        shutil.make_archive(os.path.join(run_dir, 'Certificates'), 'zip', img_out_dir)
+        
+    return send_file(zip_path, as_attachment=True, download_name='Certificates.zip')
+
+@app.route('/download/pdf/<run_id>')
+def download_pdf_route(run_id):
+    """Download all certificates merged into one PDF."""
+    try:
+        base_temp_dir = os.path.join(app.root_path, 'temp_runs')
+        run_dir = os.path.join(base_temp_dir, run_id)
+        img_out_dir = os.path.join(run_dir, 'certificates')
+        
+        if not os.path.exists(img_out_dir):
+            return "Run ID not found.", 404
+            
+        pdf_path = os.path.join(run_dir, 'All_Certificates.pdf')
+        
+        # If already exists, return
+        if os.path.exists(pdf_path):
+             return send_file(pdf_path, as_attachment=True, download_name='All_Certificates.pdf')
+        
+        # Generate PDF
+        filenames = sorted([f for f in os.listdir(img_out_dir) if f.lower().endswith('.png')])
+        if not filenames:
+            return "No certificates found to merge.", 404
+            
+        # Helper to open images
+        image_list = []
+        for fname in filenames:
+            img_path = os.path.join(img_out_dir, fname)
+            img = Image.open(img_path)
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            image_list.append(img)
+            
+        if image_list:
+            first_img = image_list[0]
+            rest_imgs = image_list[1:]
+            first_img.save(pdf_path, "PDF", resolution=100.0, save_all=True, append_images=rest_imgs)
+            
+        return send_file(pdf_path, as_attachment=True, download_name='All_Certificates.pdf')
+        
+    except Exception as e:
+        log_error(e)
+        return f"Error generating PDF: {e}", 500
+
+@app.route('/temp_runs/<run_id>/certificates/<filename>')
+def serve_temp_image(run_id, filename):
+    """Serve individual certificate images for preview."""
+    base_temp_dir = os.path.join(app.root_path, 'temp_runs')
+    run_dir = os.path.join(base_temp_dir, run_id)
+    img_out_dir = os.path.join(run_dir, 'certificates')
+    return send_file(os.path.join(img_out_dir, filename))
 
 @app.route('/generate', methods=['POST'])
 def generate():
     try:
-        name = request.form.get('name', '').upper()
+        raw_name = request.form.get('name', '')
+        name = re.sub(r'[^\x00-\x7F]+', '', raw_name).strip().upper()
+        if not name: name = "UNKNOWN"
+        
         roll = request.form.get('roll_no', '')
-        date = request.form.get('date', '') # We still get it from form, but template ignores it per request
+        date = request.form.get('date', '') 
         photo_file = request.files.get('photo')
         
         cert_id = f"AIK{roll}"
         qr_b64 = get_qr_base64(name, roll, date, cert_id)
         photo_b64 = f"data:image/png;base64,{base64.b64encode(photo_file.read()).decode()}" if photo_file else ""
+
+        # Main Font Size Calc
+        name_len = len(name)
+        if name_len <= 15: main_fontsize = 160
+        elif name_len <= 20: main_fontsize = 140
+        elif name_len <= 30: main_fontsize = 110
+        elif name_len <= 40: main_fontsize = 90
+        else: main_fontsize = 70
 
         # Get fixed signature
         with open("signature.png", "rb") as f:
@@ -272,23 +377,102 @@ def generate():
             cert_id=cert_id, 
             signature_base64=sig_b64,
             id_name_content=id_name_content,
-            id_name_fontsize=id_name_fontsize
+            id_name_fontsize=id_name_fontsize,
+            main_name_fontsize=main_fontsize,
+            date=date
         )
         png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'))
         b64_img = base64.b64encode(png_data).decode()
         
         certs = [{'name': name, 'roll': roll, 'image': f"data:image/png;base64,{b64_img}", 'cert_id': cert_id}]
+
         return render_template('results.html', certificates=certs)
     except Exception as e:
         log_error(e)
         return f"Internal Server Error: {e}", 500
 
 
+def generate_single_certificate(rec, svg_template, sig_b64, img_out_dir, domain):
+    """Helper to generate one certificate (render, convert, save)."""
+    try:
+        raw_name = str(rec.get('name', 'Unknown'))
+        name = re.sub(r'[^\x00-\x7F]+', '', raw_name).strip().upper()
+        if not name: name = "UNKNOWN"
+
+        roll = str(rec.get('roll', 'N/A')).upper()
+        date_val = str(rec.get('date', '08-02-2026')) 
+        
+        cert_id = f"AIK{roll}"
+        qr_b64 = get_qr_base64(name, roll, date_val, cert_id, domain)
+        photo_b64 = rec.get('photo_base64', '')
+        
+        # Main Font Size Calc
+        name_len = len(name)
+        if name_len <= 15: main_fontsize = 160
+        elif name_len <= 20: main_fontsize = 140
+        elif name_len <= 30: main_fontsize = 110
+        elif name_len <= 40: main_fontsize = 90
+        else: main_fontsize = 70
+
+        id_name_content, id_name_fontsize = get_wrapped_name_svg(name)
+        svg_data = svg_template.format(
+            name=name, 
+            roll_no=roll, 
+            photo_base64=photo_b64, 
+            qr_base64=qr_b64, 
+            cert_id=cert_id,
+            signature_base64=sig_b64,
+            id_name_content=id_name_content,
+            id_name_fontsize=id_name_fontsize,
+            main_name_fontsize=main_fontsize,
+            date=date_val
+        )
+        
+        png_data = cairosvg.svg2png(bytestring=svg_data.encode('utf-8'))
+        
+        # Save PNG to disk
+        # Sanitize filename
+        safe_name = re.sub(r'[^a-zA-Z0-9_\-]', '_', name)
+        safe_roll = re.sub(r'[^a-zA-Z0-9_\-]', '_', roll)
+        filename = f"{safe_roll}_{safe_name}.png"
+        
+        # Use a safe path join
+        out_path = os.path.join(img_out_dir, filename)
+        with open(out_path, 'wb') as f:
+            f.write(png_data)
+            
+    except Exception as e:
+        print(f"Error generating for {rec.get('name')}: {e}")
+        raise e
 
 
 
 
-if __name__ == '__main__':
+
+
     print(app.url_map)
     port = int(os.environ.get("PORT", 5003))
+
+    # Register Cleanup on Exit
+    import atexit
+    import signal
+
+    def cleanup_temp_files(signum=None, frame=None):
+        print("Cleaning up temporary files...")
+        temp_dir = os.path.join(app.root_path, 'temp_runs')
+        if os.path.exists(temp_dir):
+            try:
+                shutil.rmtree(temp_dir)
+                print(f"Deleted {temp_dir}")
+            except Exception as e:
+                print(f"Error cleaning up: {e}")
+        if signum is not None:
+             sys.exit(0)
+
+    # Register for normal exit and signals
+    atexit.register(cleanup_temp_files)
+    signal.signal(signal.SIGINT, cleanup_temp_files)
+    signal.signal(signal.SIGTERM, cleanup_temp_files)
+
     app.run(host='0.0.0.0', port=port)
+
